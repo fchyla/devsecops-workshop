@@ -1,0 +1,286 @@
+# DevOps Workshop Kubernetes Configuration
+# WARNING: Contains test secrets for lab demonstration only
+# NEVER deploy these configurations to production environments
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: workshop-app
+  labels:
+    environment: development
+    security: lab-only
+
+---
+# ConfigMap with hardcoded secrets - ANTI-PATTERN
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: workshop-app
+data:
+  database_host: "postgres-service"
+  database_port: "5432"
+  database_name: "workshop_app"
+  # WARNING: Never store passwords in ConfigMaps!
+  database_password: "WorkshopDBPass2024!"
+  redis_host: "redis-service"
+  redis_port: "6379"
+  redis_password: "RedisSecretPass2024#"
+  
+  # API Configuration with secrets
+  jwt_secret: "workshop_jwt_secret_key_2024_kubernetes"
+  api_key: "workshop_api_key_2024_k8s_demo"
+  
+  # External Service Keys
+  aws_access_key_id: "AKIAI44QH8DHBEXAMPLE"
+  aws_secret_access_key: "je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY"
+  stripe_secret_key: "sk_test_4eC39HqLyjWDarjtT1zdp7dc"
+  sendgrid_api_key: "SG.1234567890abcdef.ghijklmnopqrstuvwxyz123456789012"
+  
+  # OAuth Secrets in ConfigMap - SECURITY RISK
+  google_client_secret: "GOCSPX-AbCdEfGhIjKlMnOpQrStUvWxYz"
+  github_client_secret: "ghcs_abcdefghijklmnopqrstuvwxyz123456789012"
+  
+  config.yaml: |
+    application:
+      name: "Workshop K8s App"
+      secret_key: "hardcoded_secret_in_configmap_2024"
+    
+    database:
+      url: "postgresql://workshop_user:WorkshopDBPass2024!@postgres-service:5432/workshop_app"
+    
+    external_apis:
+      weather_service:
+        api_key: "weather_api_key_1234567890abcdef"
+        base_url: "https://api.weather.com"
+      
+      payment_gateway:
+        merchant_id: "workshop_merchant_123456"
+        private_key: "payment_private_key_workshop_2024"
+
+---
+# Secret object - but base64 encoded secrets are visible
+apiVersion: v1
+kind: Secret
+metadata:
+  name: database-secret
+  namespace: workshop-app
+type: Opaque
+data:
+  # These are base64 encoded but easily decoded
+  username: d29ya3Nob3BfdXNlcg==  # workshop_user
+  password: V29ya3Nob3BEQlBhc3MyMDI0IQ==  # WorkshopDBPass2024!
+  root-password: UG9zdGdyZXNSb290UGFzczIwMjQh  # PostgresRootPass2024!
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-secrets
+  namespace: workshop-app
+type: Opaque
+data:
+  jwt-secret: d29ya3Nob3Bfand0X3NlY3JldF9rZXlfMjAyNF9rdWJlcm5ldGVz  # workshop_jwt_secret_key_2024_kubernetes
+  stripe-key: c2tfdGVzdF80ZUM0OUhxTHlqV0Rhcmp0VDF6ZHA3ZGM=  # sk_test_4eC39HqLyjWDarjtT1zdp7dc
+  aws-access-key: QUtJQUk0NFE4REhCRVhBTVBMRQ==  # AKIAI44QH8DHBEXAMPLE
+  aws-secret-key: amU3TXRHY0x3QkYvMlpwOVV0ay9oM3lDbzhuUlRCRVhBTVBMRUtFWQ==  # je7MtGbClwBF/2Zp9Utk/h3yCo8nvRTBEXAMPLEKEY
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workshop-app
+  namespace: workshop-app
+  labels:
+    app: workshop-app
+    version: "1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: workshop-app
+  template:
+    metadata:
+      labels:
+        app: workshop-app
+    spec:
+      containers:
+      - name: app
+        image: workshop/app:latest
+        ports:
+        - containerPort: 8080
+        
+        # Direct secret injection in environment - INSECURE
+        env:
+        - name: NODE_ENV
+          value: "production"
+        
+        # Hardcoded secrets in environment variables
+        - name: DATABASE_URL
+          value: "postgresql://workshop_user:WorkshopDBPass2024!@postgres-service:5432/workshop_app"
+        
+        - name: JWT_SECRET
+          value: "jwt_secret_hardcoded_in_deployment_2024"
+        
+        - name: API_SECRET_KEY
+          value: "api_secret_hardcoded_k8s_2024"
+        
+        - name: ENCRYPTION_KEY
+          value: "AES256EncryptionKey1234567890123456"
+        
+        # AWS Credentials directly in env
+        - name: AWS_ACCESS_KEY_ID
+          value: "AKIAI44QH8DHBEXAMPLE"
+        - name: AWS_SECRET_ACCESS_KEY
+          value: "je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY"
+        
+        # External API keys
+        - name: STRIPE_SECRET_KEY
+          value: "sk_test_4eC39HqLyjWDarjtT1zdp7dc"
+        - name: SENDGRID_API_KEY
+          value: "SG.workshop1234567890.abcdefghijklmnopqrstuvwxyz"
+        - name: TWILIO_AUTH_TOKEN
+          value: "workshop_twilio_auth_token_123456"
+        
+        # OAuth secrets
+        - name: GOOGLE_CLIENT_SECRET
+          value: "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24"
+        - name: GITHUB_CLIENT_SECRET
+          value: "ghcs_workshop_github_client_secret_2024"
+        
+        # References to ConfigMap (still insecure for secrets)
+        - name: REDIS_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: redis_password
+        
+        # References to Secrets
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: password
+        
+        - name: DB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: root-password
+        
+        # Volume mounts with secrets
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: secret-volume
+          mountPath: /app/secrets
+          readOnly: true
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      
+      # Service account with potential token access
+      serviceAccountName: workshop-service-account
+      
+      volumes:
+      - name: config-volume
+        configMap:
+          name: app-config
+      
+      - name: secret-volume
+        secret:
+          secretName: api-secrets
+      
+      # SSL certificates volume
+      - name: ssl-certs
+        secret:
+          secretName: ssl-certificates
+          items:
+          - key: tls.crt
+            path: app.crt
+          - key: tls.key
+            path: app.key
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ssl-certificates
+  namespace: workshop-app
+type: kubernetes.io/tls
+data:
+  # Base64 encoded certificate and private key
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURYVENDQWtXZ0F3SUJBZ0lKQUt3...
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQzAxMjM0NTY3ODlhYmNkZWYK...
+
+---
+# Service Account - might have excessive permissions
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workshop-service-account
+  namespace: workshop-app
+secrets:
+- name: workshop-sa-token
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: workshop-sa-token
+  namespace: workshop-app
+  annotations:
+    kubernetes.io/service-account.name: workshop-service-account
+type: kubernetes.io/service-account-token
+data:
+  # Service account token with cluster access
+  token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNklsWklXamRIVDFGS1RHVjJVVVJsVGtGdFVuZFNUVkV3UWpVNFVYUlRiWEI2V1VWcWNrNTZRMEZhTjJNaWZRLi4u
+
+---
+# Job with embedded credentials
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: database-migration
+  namespace: workshop-app
+spec:
+  template:
+    spec:
+      containers:
+      - name: migration
+        image: workshop/migration:latest
+        env:
+        - name: DB_MIGRATION_USER
+          value: "migration_user"
+        - name: DB_MIGRATION_PASSWORD
+          value: "MigrationUserPass2024!"
+        - name: DB_ADMIN_PASSWORD
+          value: "AdminDBPass2024!"
+        - name: BACKUP_S3_ACCESS_KEY
+          value: "AKIAI44QH8DHBEXAMPLE"
+        - name: BACKUP_S3_SECRET_KEY
+          value: "je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY"
+        command: ["./migrate.sh"]
+      restartPolicy: OnFailure
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workshop-app-service
+  namespace: workshop-app
+spec:
+  selector:
+    app: workshop-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer

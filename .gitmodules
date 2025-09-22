@@ -1,0 +1,12 @@
+[submodule "module1/lab11/terragoat"]
+	path = module1/lab11/terragoat
+	url = https://github.com/bridgecrewio/terragoat.git
+[submodule "module1/lab12/pygoat"]
+	path = module1/lab12/pygoat
+	url = https://github.com/adeyosemanputra/pygoat.git
+[submodule "module1/module1/lab1/terragoat"]
+	path = module1/module1/lab1/terragoat
+	url = https://github.com/bridgecrewio/terragoat.git
+[submodule "module1/lab1/terragoat"]
+	path = module1/lab1/terragoat
+	url = https://github.com/bridgecrewio/terragoat.git

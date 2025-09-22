@@ -1,0 +1,89 @@
+# Application Configuration File
+# Lab Environment - Contains Test Secrets Only
+
+application:
+  name: "DevOps Workshop API"
+  version: "1.0.0"
+  environment: "development"
+  debug: true
+
+database:
+  primary:
+    host: "db-primary.internal"
+    port: 3306
+    username: "app_user"
+    password: "MySecureDBPass2024!"
+    database: "workshop_app"
+    connection_string: "mysql://app_user:MySecureDBPass2024!@db-primary.internal:3306/workshop_app"
+  
+  replica:
+    host: "db-replica.internal"
+    port: 3306
+    username: "readonly_user"
+    password: "ReadOnlyPass123$"
+
+cache:
+  redis:
+    host: "redis.internal"
+    port: 6379
+    password: "RedisSecretPass2024#"
+    url: "redis://:RedisSecretPass2024#@redis.internal:6379"
+
+authentication:
+  jwt:
+    secret: "jwt_signing_secret_2024_workshop_very_long_key"
+    issuer: "workshop-api"
+    expiration: 3600
+  
+  oauth:
+    providers:
+      google:
+        client_id: "987654321098-zyxwvutsrqponmlkjihgfedcba987654.apps.googleusercontent.com"
+        client_secret: "GOCSPX-AbCdEfGhIjKlMnOpQrStUvWxYz"
+      
+      github:
+        client_id: "Iv1.a1b2c3d4e5f6g7h8"
+        client_secret: "abcdef1234567890abcdef1234567890abcdef12"
+
+external_services:
+  aws:
+    region: "us-east-1"
+    access_key_id: "AKIAI44QH8DHBEXAMPLE"
+    secret_access_key: "je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY"
+  
+  smtp:
+    host: "smtp.mailgun.org"
+    port: 587
+    username: "postmaster@sandbox123.mailgun.org"
+    password: "MailgunAPIKey-1234567890abcdef"
+  
+  payment:
+    stripe:
+      publishable_key: "pk_test_TYooMQauvdEDq54NiTphI7jx"
+      secret_key: "sk_test_4eC39HqLyjWDarjtT1zdp7dc"
+      webhook_secret: "whsec_1234567890abcdefghijklmnopqrstuv"
+
+monitoring:
+  sentry:
+    dsn: "https://1234567890abcdef1234567890abcdef@o123456.ingest.sentry.io/1234567"
+  
+  datadog:
+    api_key: "1234567890abcdef1234567890abcdef12"
+    app_key: "abcdef1234567890abcdef1234567890abcdef12"
+
+security:
+  encryption:
+    master_key: "encryption_master_key_2024_very_secure_32_chars"
+    salt: "workshop_salt_for_hashing_purposes_2024"
+  
+  api_keys:
+    internal_service: "workshop-internal-api-key-2024-secret"
+    partner_integration: "partner-api-key-1234567890abcdef"
+
+logging:
+  level: "debug"
+  outputs:
+    - type: "file"
+      path: "/var/log/workshop-api.log"
+    - type: "elasticsearch"
+      url: "https://elastic:elasticPassword123!@es-cluster.internal:9200"

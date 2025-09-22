@@ -1,0 +1,200 @@
+version: '3.8'
+
+# DevOps Workshop Docker Compose Configuration
+# WARNING: Contains test secrets for lab purposes only
+# NEVER use these patterns in production environments
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://workshop_user:WorkshopDBPass2024!@db:5432/workshop_app
+      - REDIS_URL=redis://:RedisSecretPass2024#@redis:6379/0
+      - JWT_SECRET=workshop_jwt_secret_key_very_long_and_secure_2024
+      - API_SECRET_KEY=workshop_api_secret_key_2024_do_not_expose
+      
+      # AWS Configuration
+      - AWS_ACCESS_KEY_ID=AKIAI44QH8DHBEXAMPLE
+      - AWS_SECRET_ACCESS_KEY=je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY
+      - AWS_DEFAULT_REGION=us-east-1
+      
+      # Third-party API Keys
+      - STRIPE_SECRET_KEY=sk_test_4eC39HqLyjWDarjtT1zdp7dc
+      - SENDGRID_API_KEY=SG.abcdefghijklmnopqrstuvwxyz.1234567890abcdefghijklmnopqrstuvwxyz
+      - TWILIO_ACCOUNT_SID=AC1234567890abcdefghijklmnopqrstuv
+      - TWILIO_AUTH_TOKEN=abcdef1234567890abcdef1234567890
+      
+      # OAuth Secrets
+      - GOOGLE_CLIENT_SECRET=GOCSPX-AbCdEfGhIjKlMnOpQrStUvWxYz123
+      - FACEBOOK_APP_SECRET=abcdef1234567890abcdef1234567890abcdef
+      - GITHUB_CLIENT_SECRET=ghcs_1234567890abcdefghijklmnopqrstuvwxyz123456
+      
+      # Monitoring and Logging
+      - SENTRY_DSN=https://1234567890abcdef@o123456.ingest.sentry.io/1234567
+      - DATADOG_API_KEY=1234567890abcdefghijklmnopqrstuvwx
+      
+      # Encryption Keys
+      - MASTER_ENCRYPTION_KEY=AES256EncryptionKey1234567890123456789012345678901234567890
+      - HMAC_SIGNING_SECRET=HMACSigningSecret2024Workshop123456789012345678901234567890
+    
+    depends_on:
+      - db
+      - redis
+    
+    volumes:
+      - ./app:/app
+      - ./secrets/ssl-cert.pem:/etc/ssl/certs/app-cert.pem:ro
+      - ./secrets/ssl-key.pem:/etc/ssl/private/app-key.pem:ro
+    
+    networks:
+      - workshop-network
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=workshop_app
+      - POSTGRES_USER=workshop_user
+      - POSTGRES_PASSWORD=WorkshopDBPass2024!
+      - POSTGRES_INITDB_ARGS=--auth-local=trust --auth-host=md5
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    
+    networks:
+      - workshop-network
+
+  redis:
+    image: redis:6-alpine
+    command: redis-server --requirepass RedisSecretPass2024#
+    ports:
+      - "6379:6379"
+    
+    volumes:
+      - redis_data:/data
+    
+    networks:
+      - workshop-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    environment:
+      - SSL_CERTIFICATE_PASSWORD=SSLCertPass2024!
+    
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl/workshop.crt:/etc/nginx/ssl/workshop.crt:ro
+      - ./ssl/workshop.key:/etc/nginx/ssl/workshop.key:ro
+      # WARNING: Private key mounted directly - security risk!
+    
+    depends_on:
+      - web
+    
+    networks:
+      - workshop-network
+
+  elasticsearch:
+    image: elasticsearch:7.17.0
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=ElasticSearchPass2024!
+      - xpack.security.enabled=true
+      - bootstrap.memory_lock=true
+    
+    ports:
+      - "9200:9200"
+    
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    
+    networks:
+      - workshop-network
+
+  kibana:
+    image: kibana:7.17.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=ElasticSearchPass2024!
+      - SERVER_PUBLICBASEURL=https://kibana.workshop.local
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=workshop_kibana_encryption_key_32_chars
+    
+    ports:
+      - "5601:5601"
+    
+    depends_on:
+      - elasticsearch
+    
+    networks:
+      - workshop-network
+
+  mongodb:
+    image: mongo:4.4
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongouser
+      - MONGO_INITDB_ROOT_PASSWORD=MongoDBPass2024!
+      - MONGO_INITDB_DATABASE=workshop_mongo
+    
+    ports:
+      - "27017:27017"
+    
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    
+    networks:
+      - workshop-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=workshop_rmq
+      - RABBITMQ_DEFAULT_PASS=RabbitMQPass2024!
+      - RABBITMQ_ERLANG_COOKIE=workshop_erlang_cookie_2024_secret
+    
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    
+    networks:
+      - workshop-network
+
+  vault:
+    image: vault:latest
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=workshop-vault-root-token-2024
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+      - VAULT_UNSEAL_KEY=workshop_vault_unseal_key_base64_encoded_2024
+    
+    ports:
+      - "8200:8200"
+    
+    cap_add:
+      - IPC_LOCK
+    
+    networks:
+      - workshop-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  es_data:
+  mongo_data:
+  rabbitmq_data:
+
+networks:
+  workshop-network:
+    driver: bridge
