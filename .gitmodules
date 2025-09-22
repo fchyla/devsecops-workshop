@@ -10,3 +10,6 @@
 [submodule "module1/lab1/terragoat"]
 	path = module1/lab1/terragoat
 	url = https://github.com/bridgecrewio/terragoat.git
+[submodule "module1/lab2/pygoat"]
+	path = module1/lab2/pygoat
+	url = https://github.com/adeyosemanputra/pygoat.git
