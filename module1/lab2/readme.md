@@ -1,7 +1,7 @@
-#checkov
+# checkov
 `sudo docker run --tty --rm --volume (pwd):/app -w /app bridgecrew/checkov --directory /app`
 
-#trivy
+# trivy
 RUN
 `sudo docker run --rm -it -v "$(pwd):/lab" -w /lab aquasec/trivy fs .`
 
@@ -11,15 +11,15 @@ RUN
 `trivy fs lab12/`
 
 
-#osv-scanner 
-INSALL 
+# osv-scanner 
+INSTALL 
 https://google.github.io/osv-scanner/installation/ or https://github.com/google/osv-scanner/releases (binary)
 
 RUN
 `osv-scanner scan source -r .`
 
-#grype 
-INSALL
+# grype 
+INSTALL
 `curl -sSfL https://get.anchore.io/grype | sudo sh -s -- -b /usr/local/bin`
 RUN
 `grype file:Dockerfile`
