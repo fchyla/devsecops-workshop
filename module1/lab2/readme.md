@@ -1,5 +1,5 @@
 # checkov
-`sudo docker run --tty --rm --volume (pwd):/app -w /app bridgecrew/checkov --directory /app`
+`sudo docker run --tty --rm --volume $(pwd):/app -w /app bridgecrew/checkov --directory /app`
 
 # trivy
 RUN
